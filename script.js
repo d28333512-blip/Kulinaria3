@@ -1,5 +1,5 @@
 // ВСТАВЬТЕ СЮДА ВАШУ ССЫЛКУ НА СЕРВЕР RENDER (БЕЗ КОСОЙ ЧЕРТЫ В КОНЦЕ):
-const SERVER_URL = 'https://onrender.com'; 
+const SERVER_URL = 'https://kulinaria3.onrender.com'; 
 
 let currentUser = null; 
 let activeScreen = 'feed'; 
@@ -9,41 +9,49 @@ const regForm = document.getElementById('regForm');
 const feedContainer = document.getElementById('feedContainer');
 const chatMessages = document.getElementById('chatMessages');
 
+// АВТОМАТИЧЕСКИЙ ВХОД И ПРОВЕРКА ПАМЯТИ БРАУЗЕРА
 async function checkLogin() {
     const savedUser = localStorage.getItem('foodgram_user');
     if (savedUser) {
         currentUser = JSON.parse(savedUser);
-        regOverlay.style.display = 'none';
+        regOverlay.style.display = 'none'; // Прячем окно входа
         loadFeed();
         startPolling(); 
     } else {
-        regOverlay.style.display = 'flex';
+        regOverlay.style.display = 'flex'; // Показываем окно входа, если юзер чистый
     }
 }
 
+// РАБОЧАЯ РЕГИСТРАЦИЯ И ВХОД
 regForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+    
     const username = document.getElementById('regUsername').value.trim();
     const avatar = document.getElementById('regAvatar').value;
     const bio = document.getElementById('regBio').value.trim();
 
-    const res = await fetch(`${SERVER_URL}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, avatar, bio })
-    });
-    
-    if (res.ok) {
-        currentUser = await res.json();
-        localStorage.setItem('foodgram_user', JSON.stringify(currentUser)); 
-        regOverlay.style.display = 'none';
-        loadFeed();
-        startPolling();
-    } else {
-        alert('Ошибка при входе');
+    try {
+        const res = await fetch(`${SERVER_URL}/api/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, avatar, bio })
+        });
+        
+        if (res.ok) {
+            currentUser = await res.json();
+            localStorage.setItem('foodgram_user', JSON.stringify(currentUser)); // Запоминаем аккаунт в браузере!
+            regOverlay.style.display = 'none'; // Прячем модалку входа
+            loadFeed();
+            startPolling();
+        } else {
+            alert('Не удалось войти. Проверьте имя.');
+        }
+    } catch (err) {
+        alert('Ошибка связи с сервером Render.');
     }
 });
 
+// ЗАГРУЗКА КУЛИНАРНОЙ ЛЕНТЫ ПУБЛИКАЦИЙ
 async function loadFeed() {
     if (!currentUser || activeScreen === 'chat') return;
     try {
@@ -94,11 +102,12 @@ async function loadFeed() {
     } catch (err) {}
 }
 
+// ВЫЛОЖИТЬ НОВЫЙ РЕЦЕПТ С ПРИВЯЗКОЙ АВТОРА
 document.getElementById('recipeForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const formData = new FormData();
     formData.append('title', document.getElementById('recipeTitle').value.trim());
-    formData.append('recipeImage', document.getElementById('recipeFile').files[0]);
+    formData.append('recipeImage', document.getElementById('recipeFile').files[0]); // Передаем сам файл картинки
     formData.append('desc', document.getElementById('recipeDesc').value.trim());
     formData.append('userId', currentUser.id);
     formData.append('author', currentUser.username);
@@ -112,13 +121,15 @@ document.getElementById('recipeForm').addEventListener('submit', async (e) => {
     }
 });
 
+// УДАЛИТЬ ПОСТ С СЕРВЕРА В ДАТА СТОРЕ
 async function deleteRecipe(id) {
-    if (confirm('Удалить этот post?')) {
+    if (confirm('Удалить этот рецепт навсегда?')) {
         await fetch(`${SERVER_URL}/api/recipes/${id}`, { method: 'DELETE' });
         loadFeed();
     }
 }
 
+// ЗАГРУЗКА ЖИВОГО КУЛИНАРНОГО ЧАТА (ОТ КОГО СООБЩЕНИЕ + СКРОЛЛ)
 async function loadChat() {
     if (activeScreen !== 'chat') return;
     try {
@@ -143,18 +154,20 @@ async function loadChat() {
             chatMessages.appendChild(row);
         });
 
+        // Плавная прокрутка чата вниз к свежим строчкам
         if (shouldScroll || chatMessages.innerHTML === '') {
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
     } catch (e) {}
 }
 
+// ОТПРАВКА СООБЩЕНИЙ В ЧАТ
 function sendChatMessage() {
     const input = document.getElementById('chatInput');
     const text = input.value.trim();
     if (!text) return;
 
-    // Выводим системное русское время в формате 14:11
+    // Выводим точное русское время в формате 14:03
     const russianTime = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 
     fetch(`${SERVER_URL}/api/chat`, {
@@ -176,6 +189,7 @@ function sendChatMessage() {
 document.getElementById('chatSendBtn').addEventListener('click', sendChatMessage);
 document.getElementById('chatInput').addEventListener('keypress', (e) => { if(e.key === 'Enter') sendChatMessage(); });
 
+// УМНЫЕ РЕАКЦИИ ПОД КАРТОЧКАМИ БЛЮД (ОТМЕНА ПРИ ПОВТОРНОМ ТАПЕ)
 async function toggleReaction(recipeId, type) {
     const key = `reaction_${recipeId}`;
     const prev = localStorage.getItem(key);
@@ -189,6 +203,7 @@ async function toggleReaction(recipeId, type) {
     loadFeed();
 }
 
+// ПЕРЕКЛЮЧЕНИЕ ЭКРАНОВ НИЖНЕГО МЕНЮ
 function showScreen(screen) {
     activeScreen = screen;
     document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
@@ -213,6 +228,7 @@ function showScreen(screen) {
 
 function toggleModal(show) { document.getElementById('modalOverlay').style.display = show ? 'flex' : 'none'; }
 
+// Постоянный фоновый опрос обновлений раз в 2 секунды
 function startPolling() {
     setInterval(() => {
         if (activeScreen === 'chat') loadChat();
@@ -220,4 +236,5 @@ function startPolling() {
     }, 2000);
 }
 
+// Запускаем стартовую проверку системы
 checkLogin();

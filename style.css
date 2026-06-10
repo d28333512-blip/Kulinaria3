@@ -42,7 +42,7 @@ body {
     font-size: 0.9rem;
 }
 
-/* МОБИЛЬНАЯ ЛЕНТА (ПЛАВНЫЙ СКРОЛЛ ВОЗВРАЩЕН) */
+/* ЛЕНТА РЕЦЕПТОВ (ПЛАВНЫЙ МЯГКИЙ СКРОЛЛ) */
 .feed-container { 
     width: 100%;
     max-width: 550px; 
@@ -102,7 +102,7 @@ body {
 .nav-link.active { color: #ff6b35; }
 .nav-link.active .nav-icon { transform: scale(1.15); }
 
-/* ДИЗАЙН ЧАТА */
+/* ДИЗАЙН И СКРОЛЛ ВНУТРИ ЧАТА */
 .chat-container { 
     width: 100%;
     max-width: 550px; 

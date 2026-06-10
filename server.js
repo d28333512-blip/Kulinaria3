@@ -3,6 +3,10 @@ const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 const multer = require('multer'); // Подключаем библиотеку для приема файлов
+// Найдите самую последнюю строчку в вашем server.js и замените её на этот блок:
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Кулинарный сервер успешно запущен в интернете на порту ${PORT}`));
+
 
 const app = express();
 app.use(express.json());

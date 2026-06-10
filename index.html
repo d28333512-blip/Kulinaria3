@@ -15,29 +15,25 @@
         <button class="add-recipe-btn" onclick="toggleModal(true)">+ Выложить блюдо</button>
     </header>
 
-    <!-- ГЛАВНЫЙ КОНТЕНТ (ЛЕНТА С СОЧНЫМ СКРОЛЛОМ) -->
+    <!-- ГЛАВНЫЙ КОНТЕНТ -->
     <main class="feed-container" id="feedContainer">
-        <!-- Сюда будут красиво вставать посты кулинаров -->
+        <!-- Рецепты будут загружаться сюда -->
     </main>
 
-    <!-- МОДАЛЬНОЕ ОКНО: ДОБАВЛЕНИЕ БЛЮДА -->
+    <!-- МОДАЛЬНОЕ ОКНО -->
     <div class="modal-overlay" id="modalOverlay" style="display: none;">
         <div class="modal-box">
             <div class="modal-header">
                 <h3>Поделиться кулинарным шедевром</h3>
                 <button class="close-btn" onclick="toggleModal(false)">✕</button>
             </div>
-            <!-- Важно: форма теперь умеет отправлять файлы благодаря enctype -->
             <form id="recipeForm" enctype="multipart/form-data">
-                <input type="text" id="recipeTitle" placeholder="Название блюда (например, Сочная Пицца)" required>
-                
-                <!-- НАСТОЯЩИЙ ВЫБОР ФАЙЛА КАРТИНКИ С ПК -->
+                <input type="text" id="recipeTitle" placeholder="Название блюда" required>
                 <div class="file-upload-box">
                     <label for="recipeFile">📁 Выберите фото блюда</label>
                     <input type="file" id="recipeFile" accept="image/*" required>
                 </div>
-
-                <textarea id="recipeDesc" placeholder="Опишите процесс приготовления или ингредиенты..." rows="4" required></textarea>
+                <textarea id="recipeDesc" placeholder="Опишите процесс приготовления..." rows="4" required></textarea>
                 <button type="submit" class="submit-btn">Опубликовать в ленту</button>
             </form>
         </div>

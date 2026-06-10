@@ -6,12 +6,11 @@
 }
 
 body {
-    background-color: #0d0e12; /* Глубокий премиальный черный */
+    background-color: #0d0e12;
     color: #f5f5f7;
     overflow-x: hidden;
 }
 
-/* ШАПКА */
 .navbar {
     position: fixed;
     top: 0;
@@ -31,11 +30,10 @@ body {
 .logo {
     font-size: 1.6rem;
     font-weight: 800;
-    letter-spacing: 1px;
 }
 
 .logo span {
-    color: #ff6b35; /* Огненный оранжевый */
+    color: #ff6b35;
 }
 
 .add-recipe-btn {
@@ -55,7 +53,6 @@ body {
     box-shadow: 0 6px 20px rgba(255, 107, 53, 0.5);
 }
 
-/* ЛЕНТА РЕЦЕПТОВ СО СКРОЛЛОМ */
 .feed-container {
     max-width: 600px;
     margin: 100px auto 40px;
@@ -65,24 +62,18 @@ body {
     gap: 30px;
 }
 
-/* КАРТОЧКА БЛЮДА */
 .recipe-card {
     background-color: #13141a;
     border: 1px solid #232530;
     border-radius: 20px;
     overflow: hidden;
     box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    transition: 0.3s;
-}
-
-.recipe-card:hover {
-    border-color: #3e4257;
 }
 
 .recipe-card img {
     width: 100%;
     height: 400px;
-    object-fit: cover; /* Фотографии не будут сжиматься */
+    object-fit: cover;
     display: block;
 }
 
@@ -92,7 +83,6 @@ body {
 
 .recipe-content h2 {
     font-size: 1.4rem;
-    font-weight: 700;
     margin-bottom: 8px;
     color: #fff;
 }
@@ -104,20 +94,23 @@ body {
     margin-bottom: 15px;
 }
 
-/* ИНТЕРФЕЙС ЛАЙКОВ */
+/* 🎯 СТИЛИ ДЛЯ ПАНЕЛИ РЕАКЦИЙ */
 .card-actions {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
+    flex-wrap: wrap;
+    border-top: 1px solid #232530;
+    padding-top: 15px;
 }
 
-.like-btn {
-    background: none;
-    border: 1px solid #3a3d52;
+.reaction-btn {
+    background: #0d0e12;
+    border: 1px solid #232530;
     color: #fff;
-    font-size: 1.1rem;
-    padding: 6px 15px;
-    border-radius: 15px;
+    font-size: 1rem;
+    padding: 6px 14px;
+    border-radius: 20px;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -125,19 +118,19 @@ body {
     transition: 0.2s;
 }
 
-.like-btn:hover {
-    background: rgba(255, 107, 53, 0.1);
+.reaction-btn:hover {
     border-color: #ff6b35;
+    background: rgba(255, 107, 53, 0.05);
 }
 
-.like-btn.liked {
+/* Стиль для активной эмоции, которую нажал юзер */
+.reaction-btn.active {
     background: #ff6b35;
     border-color: #ff6b35;
     color: #fff;
     font-weight: 600;
 }
 
-/* МОДАЛЬНОЕ ОКНО */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -185,27 +178,14 @@ body {
     color: white;
     margin-bottom: 15px;
     outline: none;
-    font-size: 0.95rem;
 }
 
 .modal-box input:focus, .modal-box textarea:focus {
     border-color: #ff6b35;
 }
 
-.submit-btn {
-    width: 100%;
-    padding: 12px;
-    background: linear-gradient(135deg, #ff6b35, #ff8c42);
-    color: white;
-    border: none;
-    border-radius: 10px;
-    font-weight: 600;
-    cursor: pointer;
-}
-/* Красивая кнопка выбора файла */
 .file-upload-box {
     margin-bottom: 15px;
-    text-align: left;
 }
 
 .file-upload-box label {
@@ -218,14 +198,19 @@ body {
     text-align: center;
     cursor: pointer;
     font-weight: 600;
-    transition: 0.2s;
-}
-
-.file-upload-box label:hover {
-    border-color: #ff6b35;
-    background: rgba(255, 107, 53, 0.05);
 }
 
 .file-upload-box input[type="file"] {
-    display: none; /* Прячем некрасивую стандартную кнопку браузера */
+    display: none;
+}
+
+.submit-btn {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, #ff6b35, #ff8c42);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
 }

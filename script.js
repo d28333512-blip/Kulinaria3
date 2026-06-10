@@ -1,5 +1,5 @@
 // ВСТАВЬТЕ СЮДА ВАШУ ССЫЛКУ НА СЕРВЕР RENDER (БЕЗ КОСОЙ ЧЕРТЫ В КОНЦЕ):
-const SERVER_URL = 'https://kulinaria3.onrender.com'; 
+const SERVER_URL = 'https://onrender.com'; 
 
 let currentUser = null; 
 let activeScreen = 'feed'; 
@@ -44,7 +44,6 @@ regForm.addEventListener('submit', async (e) => {
     }
 });
 
-// ЛЕНТА РЕЦЕПТОВ
 async function loadFeed() {
     if (!currentUser || activeScreen === 'chat') return;
     try {
@@ -95,7 +94,6 @@ async function loadFeed() {
     } catch (err) {}
 }
 
-// ПУБЛИКАЦИЯ РЕЦЕПТА
 document.getElementById('recipeForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const formData = new FormData();
@@ -115,13 +113,12 @@ document.getElementById('recipeForm').addEventListener('submit', async (e) => {
 });
 
 async function deleteRecipe(id) {
-    if (confirm('Удалить этот пост?')) {
+    if (confirm('Удалить этот post?')) {
         await fetch(`${SERVER_URL}/api/recipes/${id}`, { method: 'DELETE' });
         loadFeed();
     }
 }
 
-// ЖИВОЙ ЧАТ (ТОЧНОЕ РУССКОЕ ВРЕМЯ)
 async function loadChat() {
     if (activeScreen !== 'chat') return;
     try {
@@ -152,13 +149,12 @@ async function loadChat() {
     } catch (e) {}
 }
 
-// ОТПРАВКА СООБЩЕНИЙ С КОРРЕКТНЫМ РУССКИМ ВРЕМЕНЕМ
 function sendChatMessage() {
     const input = document.getElementById('chatInput');
     const text = input.value.trim();
     if (!text) return;
 
-    // 🎯 ИСПРАВЛЕНО: Выводим системное время в строгом русском формате (ЧЧ:ММ), например 14:03
+    // Выводим системное русское время в формате 14:11
     const russianTime = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 
     fetch(`${SERVER_URL}/api/chat`, {
@@ -180,7 +176,6 @@ function sendChatMessage() {
 document.getElementById('chatSendBtn').addEventListener('click', sendChatMessage);
 document.getElementById('chatInput').addEventListener('keypress', (e) => { if(e.key === 'Enter') sendChatMessage(); });
 
-// УМНЫЕ РЕАКЦИИ
 async function toggleReaction(recipeId, type) {
     const key = `reaction_${recipeId}`;
     const prev = localStorage.getItem(key);
@@ -194,7 +189,6 @@ async function toggleReaction(recipeId, type) {
     loadFeed();
 }
 
-// НАВИГАЦИЯ НИЖНЕЙ ПАНЕЛИ
 function showScreen(screen) {
     activeScreen = screen;
     document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));

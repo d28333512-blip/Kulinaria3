@@ -3,15 +3,14 @@
     margin: 0; 
     padding: 0; 
     font-family: 'Roboto', 'Poppins', sans-serif; 
-    -webkit-tap-highlight-color: transparent; /* Убирает серый квадрат при тапе на телефоне */
+    -webkit-tap-highlight-color: transparent;
 }
 body { 
     background-color: #0d0e12; 
     color: #f5f5f7; 
-    height: 100vh;
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
 }
 
 /* ШАПКА */
@@ -43,18 +42,15 @@ body {
     font-size: 0.9rem;
 }
 
-/* МОБИЛЬНАЯ ЛЕНТА (ОТСТУПЫ СВЕРХУ И СНИЗУ ПОД ПАНЕЛИ) */
+/* МОБИЛЬНАЯ ЛЕНТА (ПЛАВНЫЙ СКРОЛЛ ВОЗВРАЩЕН) */
 .feed-container { 
-    flex: 1;
     width: 100%;
     max-width: 550px; 
-    margin: 60px auto 70px; 
-    padding: 15px; 
+    margin: 75px auto 85px; 
+    padding: 0 15px; 
     display: flex; 
     flex-direction: column; 
     gap: 20px; 
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch; /* Плавный скролл на Айфонах */
 }
 
 .recipe-card { background-color: #13141a; border: 1px solid #232530; border-radius: 16px; overflow: hidden; }
@@ -72,7 +68,7 @@ body {
 .reaction-btn { background: #0d0e12; border: 1px solid #232530; color: #fff; padding: 6px 12px; border-radius: 20px; cursor: pointer; display: flex; align-items: center; gap: 4px; font-size: 0.85rem; }
 .reaction-btn.active { background: #ff6b35; border-color: #ff6b35; }
 
-/* КРАСИВОЕ НИЖНЕЕ МЕНЮ (НАВИГАЦИЯ ДЛЯ ТЕЛЕФОНОВ) */
+/* НИЖНЕЕ МЕНЮ */
 .bottom-nav {
     position: fixed;
     bottom: 0;
@@ -85,7 +81,7 @@ body {
     justify-content: space-around;
     align-items: center;
     z-index: 100;
-    padding-bottom: 5px; /* Коррекция под челки нижних экранов */
+    padding-bottom: 5px;
 }
 .nav-link {
     background: none;
@@ -106,12 +102,12 @@ body {
 .nav-link.active { color: #ff6b35; }
 .nav-link.active .nav-icon { transform: scale(1.15); }
 
-/* ЭКРАН ЧАТА ДЛЯ СМАРТФОНОВ */
+/* ДИЗАЙН ЧАТА */
 .chat-container { 
     width: 100%;
     max-width: 550px; 
-    height: calc(100vh - 125px); 
-    margin: 60px auto 65px; 
+    height: calc(100vh - 140px); 
+    margin: 65px auto 65px; 
     background: #0d0e12; 
     display: flex; 
     flex-direction: column; 
@@ -128,8 +124,8 @@ body {
 .chat-input-row input { flex: 1; padding: 10px 14px; background: #0d0e12; border: 1px solid #232530; border-radius: 20px; color: white; outline: none; font-size: 0.95rem; }
 .chat-input-row button { background: #ff6b35; color: white; border: none; width: 38px; height: 38px; border-radius: 50%; cursor: pointer; font-size: 1rem; font-weight: bold; display: flex; justify-content: center; align-items: center; }
 
-/* ПРОФИЛЬ, МОДАЛКИ, АВТОРИЗАЦИЯ */
-.profile-card-container { max-width: 550px; margin: 80px auto 10px; background: #13141a; border: 1px solid #232530; border-radius: 16px; padding: 20px; text-align: center; }
+/* ПРОФИЛЬ И ОКНА */
+.profile-card-container { max-width: 550px; margin: 75px auto 20px; background: #13141a; border: 1px solid #232530; border-radius: 16px; padding: 20px; text-align: center; }
 .profile-big-avatar { font-size: 3.5rem; margin-bottom: 5px; }
 .reg-overlay, .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(5,5,8,0.95); display: flex; justify-content: center; align-items: center; z-index: 1000; padding: 15px; }
 .reg-box, .modal-box { background: #13141a; padding: 25px; border-radius: 16px; width: 100%; max-width: 400px; border: 1px solid #232530; text-align: center; }
@@ -138,4 +134,3 @@ body {
 .file-upload-box label { display: block; padding: 12px; background: #0d0e12; border: 1px dashed #3a3d52; border-radius: 10px; color: #ff6b35; cursor: pointer; font-weight: 600; margin-bottom: 12px; font-size: 0.9rem; }
 .file-upload-box input { display: none; } .close-btn { background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer; }
 .modal-header { display: flex; justify-content: space-between; margin-bottom: 15px; }
-.auth-error { color: #ff6b35; margin-bottom: 10px; font-size: 0.9rem; }

@@ -1,4 +1,4 @@
-const SERVER_URL = 'http://localhost:3000';
+const SERVER_URL = 'https://kulinaria3.onrender.com';
 
 const feedContainer = document.getElementById('feedContainer');
 const recipeForm = document.getElementById('recipeForm');

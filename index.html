@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>FoodGram</title>
     <link href="https://googleapis.com" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
@@ -13,7 +13,7 @@
     <div class="reg-overlay" id="regOverlay">
         <div class="reg-box">
             <h2>Добро пожаловать в FoodGram</h2>
-            <p>Введите ваш постоянный никнейм. Если аккаунта нет, мы его создадим!</p>
+            <p>Введите ваш постоянный никнейм для входа.</p>
             <form id="regForm">
                 <input type="text" id="regUsername" placeholder="Ваш никнейм (например, Chef_Danya)" required>
                 <select id="regAvatar">
@@ -28,21 +28,16 @@
         </div>
     </div>
 
-    <!-- ВЕРХНЯЯ ПАНЕЛЬ НАВИГАЦИИ -->
+    <!-- ШАПКА САЙТА (ТОЛЬКО ЛОГОТИП И КНОПКА ПУБЛИКАЦИИ) -->
     <header class="navbar">
         <div class="logo">🍊 Food<span>Gram</span></div>
-        <nav class="nav-menu">
-            <button class="nav-link active" id="feedLink" onclick="showScreen('feed')">Лента</button>
-            <button class="nav-link" id="chatLink" onclick="showScreen('chat')">Чат поваров</button>
-            <button class="nav-link" id="profileLink" onclick="showScreen('profile')">Профиль</button>
-        </nav>
-        <button class="add-recipe-btn" onclick="toggleModal(true)">+ Поделиться рецептом</button>
+        <button class="add-recipe-btn" onclick="toggleModal(true)">+ Рецепт</button>
     </header>
 
-    <!-- СЕКЦИЯ ЛЕНТЫ И ПРОФИЛЯ -->
+    <!-- ОСНОВНОЙ КОНТЕНТ (ЛЕНТА С СОЧНЫМ СКРОЛЛОМ) -->
     <main class="feed-container" id="feedContainer"></main>
 
-    <!-- ИНФОРМАЦИОННЫЙ БЛОК ПРОФИЛЯ (СКРЫТ ПО УМОЛЧАНИЮ) -->
+    <!-- БЛОК ПРОФИЛЯ -->
     <div class="profile-card-container" id="profileContainer" style="display: none;">
         <div class="profile-header-box">
             <div class="profile-big-avatar" id="profileAvatar">👤</div>
@@ -52,13 +47,29 @@
         <h3 style="text-align: center; margin-top: 30px; color: #ff6b35;">Мои публикации:</h3>
     </div>
 
-    <!-- ЭКРАН МЕГА-ЧАТА СО СКРОЛЛОМ -->
+    <!-- ЭКРАН ЧАТА ПОЛНОСТЬЮ ПОД ТЕЛЕФОНЫ -->
     <div class="chat-container" id="chatContainer" style="display: none;">
         <div class="chat-messages" id="chatMessages"></div>
         <div class="chat-input-row">
-            <input type="text" id="chatInput" placeholder="Напишите сообщение в кулинарный чат...">
-            <button id="chatSendBtn">Отправить</button>
+            <input type="text" id="chatInput" placeholder="Сообщение в чат поваров...">
+            <button id="chatSendBtn">➤</button>
         </div>
+    </div>
+
+    <!-- НИЖНЕЕ МЕНЮ НАВИГАЦИИ (ДЛЯ ТЕЛЕФОНОВ) -->
+    <div class="bottom-nav">
+        <button class="nav-link active" id="feedLink" onclick="showScreen('feed')">
+            <div class="nav-icon">🏠</div>
+            <span>Лента</span>
+        </button>
+        <button class="nav-link" id="chatLink" onclick="showScreen('chat')">
+            <div class="nav-icon">💬</div>
+            <span>Чат</span>
+        </button>
+        <button class="nav-link" id="profileLink" onclick="showScreen('profile')">
+            <div class="nav-icon">👤</div>
+            <span>Профиль</span>
+        </button>
     </div>
 
     <!-- МОДАЛЬНОЕ ОКНО ДОБАВЛЕНИЯ БЛЮДА -->
@@ -71,7 +82,7 @@
             <form id="recipeForm" enctype="multipart/form-data">
                 <input type="text" id="recipeTitle" placeholder="Название блюда" required>
                 <div class="file-upload-box">
-                    <label for="recipeFile">📁 Выберите фото с компьютера</label>
+                    <label for="recipeFile">📁 Выберите фото с телефона</label>
                     <input type="file" id="recipeFile" accept="image/*" required>
                 </div>
                 <textarea id="recipeDesc" placeholder="Процесс приготовления..." rows="4" required></textarea>

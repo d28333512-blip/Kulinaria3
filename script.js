@@ -1,5 +1,5 @@
 // ВСТАВЬТЕ СЮДА ВАШУ ССЫЛКУ НА СЕРВЕР RENDER (БЕЗ КОСОЙ ЧЕРТЫ В КОНЦЕ):
-const SERVER_URL = 'https://kulinaria3.onrender.com'; 
+const SERVER_URL = 'https://onrender.com'; 
 
 let currentUser = null; 
 let activeScreen = 'feed'; 
@@ -9,14 +9,13 @@ const regForm = document.getElementById('regForm');
 const feedContainer = document.getElementById('feedContainer');
 const chatMessages = document.getElementById('chatMessages');
 
-// 🔒 СИСТЕМА ВХОДА И СОХРАНЕНИЯ АККАУНТА
 async function checkLogin() {
     const savedUser = localStorage.getItem('foodgram_user');
     if (savedUser) {
         currentUser = JSON.parse(savedUser);
         regOverlay.style.display = 'none';
         loadFeed();
-        startPolling(); // Начинаем ежесекундное обновление данных
+        startPolling(); 
     } else {
         regOverlay.style.display = 'flex';
     }
@@ -28,7 +27,6 @@ regForm.addEventListener('submit', async (e) => {
     const avatar = document.getElementById('regAvatar').value;
     const bio = document.getElementById('regBio').value.trim();
 
-    // Шлем запрос на сервер Render для входа/регистрации аккаунта
     const res = await fetch(`${SERVER_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -37,7 +35,7 @@ regForm.addEventListener('submit', async (e) => {
     
     if (res.ok) {
         currentUser = await res.json();
-        localStorage.setItem('foodgram_user', JSON.stringify(currentUser)); // Запоминаем в браузере
+        localStorage.setItem('foodgram_user', JSON.stringify(currentUser)); 
         regOverlay.style.display = 'none';
         loadFeed();
         startPolling();
@@ -46,7 +44,7 @@ regForm.addEventListener('submit', async (e) => {
     }
 });
 
-// ЛЕНТА ПУБЛИКАЦИЙ (ПОДПИСЬ ОТ КОГО)
+// ЛЕНТА РЕЦЕПТОВ
 async function loadFeed() {
     if (!currentUser || activeScreen === 'chat') return;
     try {
@@ -62,7 +60,7 @@ async function loadFeed() {
         const filtered = activeScreen === 'profile' ? recipes.filter(r => r.userId === currentUser.id) : recipes;
 
         if (filtered.length === 0) {
-            feedContainer.innerHTML = '<p style="text-align:center;color:#a0a5b5;padding:20px;">Тут пока ничего нет...</p>';
+            feedContainer.innerHTML = '<p style="text-align:center;color:#a0a5b5;padding:40px;font-size:0.95rem;">Тут пока ничего нет...</p>';
             return;
         }
 
@@ -76,7 +74,7 @@ async function loadFeed() {
                 <div class="card-header">
                     <div class="author-info">
                         <span class="author-avatar">${recipe.userAvatar || '👨‍🍳'}</span>
-                        <span class="author-name">${recipe.author}</span> <!-- ПИШЕТ ОТ КОГО ПОСТ -->
+                        <span class="author-name">${recipe.author}</span>
                     </div>
                     ${delBtn}
                 </div>
@@ -97,7 +95,7 @@ async function loadFeed() {
     } catch (err) {}
 }
 
-// СОЗДАНИЕ ПУБЛИКАЦИИ
+// ПУБЛИКАЦИЯ РЕЦЕПТА
 document.getElementById('recipeForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const formData = new FormData();
@@ -123,15 +121,14 @@ async function deleteRecipe(id) {
     }
 }
 
-// ЖИВОЙ КУЛИНАРНЫЙ ЧАТ (ОТ КОГО СООБЩЕНИЕ + СКРОЛЛ)
+// ЖИВОЙ ЧАТ (ТОЧНОЕ РУССКОЕ ВРЕМЯ)
 async function loadChat() {
     if (activeScreen !== 'chat') return;
     try {
         const res = await fetch(`${SERVER_URL}/api/chat`);
         const messages = await res.json();
         
-        // Запоминаем положение скролла перед обновлением
-        const shouldScroll = chatMessages.scrollTop + chatMessages.clientHeight >= chatMessages.scrollHeight - 50;
+        const shouldScroll = chatMessages.scrollTop + chatMessages.clientHeight >= chatMessages.scrollHeight - 60;
 
         chatMessages.innerHTML = '';
         messages.forEach(m => {
@@ -141,7 +138,7 @@ async function loadChat() {
             row.innerHTML = `
                 <div class="avatar">${m.avatar}</div>
                 <div class="chat-text-box">
-                    <div class="chat-sender-name">${m.username}</div> <!-- ПИШЕТ ОТ КОГО СООБЩЕНИЕ -->
+                    <div class="chat-sender-name">${m.username}</div>
                     <div class="chat-text">${m.text}</div>
                     <span class="chat-msg-time">${m.time}</span>
                 </div>
@@ -149,23 +146,31 @@ async function loadChat() {
             chatMessages.appendChild(row);
         });
 
-        // Плавный скролл вниз к свежим сообщениям 📜
         if (shouldScroll || chatMessages.innerHTML === '') {
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
     } catch (e) {}
 }
 
-// ОТПРАВКА СООБЩЕНИЯ В ЧАТ
+// ОТПРАВКА СООБЩЕНИЙ С КОРРЕКТНЫМ РУССКИМ ВРЕМЕНЕМ
 function sendChatMessage() {
     const input = document.getElementById('chatInput');
     const text = input.value.trim();
     if (!text) return;
 
+    // 🎯 ИСПРАВЛЕНО: Выводим системное время в строгом русском формате (ЧЧ:ММ), например 14:03
+    const russianTime = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+
     fetch(`${SERVER_URL}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: currentUser.id, username: currentUser.username, avatar: currentUser.avatar, text })
+        body: JSON.stringify({ 
+            userId: currentUser.id, 
+            username: currentUser.username, 
+            avatar: currentUser.avatar, 
+            text: text,
+            time: russianTime 
+        })
     }).then(() => {
         input.value = '';
         loadChat();
@@ -185,11 +190,11 @@ async function toggleReaction(recipeId, type) {
         if (prev) await fetch(`${SERVER_URL}/api/recipes/${recipeId}/reaction`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: prev, action: 'remove' }) });
         localStorage.setItem(key, type);
     }
-    await fetch(`${SERVER_URL}/api/recipes/${recipeId}/reaction`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type, action }) });
+    await fetch(`${SERVER_URL}/api/recipes/${recipeId}/reaction`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: type, action: action }) });
     loadFeed();
 }
 
-// УПРАВЛЕНИЕ НАВИГАЦИЕЙ ЭКРАНОВ
+// НАВИГАЦИЯ НИЖНЕЙ ПАНЕЛИ
 function showScreen(screen) {
     activeScreen = screen;
     document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
@@ -214,7 +219,6 @@ function showScreen(screen) {
 
 function toggleModal(show) { document.getElementById('modalOverlay').style.display = show ? 'flex' : 'none'; }
 
-// Постоянный фоновый опрос обновлений раз в 2 секунды
 function startPolling() {
     setInterval(() => {
         if (activeScreen === 'chat') loadChat();

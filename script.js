@@ -1,145 +1,136 @@
-// ВСТАВЬТЕ СЮДА ВАШУ ССЫЛКУ НА СЕРВЕР RENDER (БЕЗ КОСОЙ ЧЕРТЫ В КОНЦЕ):
-const SERVER_URL = 'https://kulinaria3.onrender.com'; 
+// ВСТАВЬТЕ СЮДА СВОЮ ССЫЛКУ НА СЕРВЕР RENDER (БЕЗ КОСОЙ ЧЕРТЫ В КОНЦЕ):
+const SERVER_URL = 'https://onrender.com'; 
 
-let myUser = null; // Хранит данные вашего профиля
-let selectedAvatarIcon = '👨‍🍳';
+let currentUser = null; // Текущий пользователь
+let activeScreen = 'feed'; // Активный экран (feed / profile / chat)
 
-const authOverlay = document.getElementById('authOverlay');
-const authForm = document.getElementById('authForm');
-const feedContainer = document.getElementById('feedContainer');
-const myRecipesContainer = document.getElementById('myRecipesContainer');
-const chatMessages = document.getElementById('chatMessages');
-const chatMessageInput = document.getElementById('chatMessageInput');
-const sendMsgBtn = document.getElementById('sendMsgBtn');
-const recipeForm = document.getElementById('recipeForm');
+// Элементы формы профиля
+const regOverlay = document.getElementById('regOverlay');
+const regForm = document.getElementById('regForm');
+const profileName = document.getElementById('profileName');
+const profileBio = document.getElementById('profileBio');
+const profileAvatar = document.getElementById('profileAvatar');
 
-// АВТОРИЗАЦИЯ И СОЗДАНИЕ ПРОФИЛЯ
-function selectAvatar(element, icon) {
-    document.querySelectorAll('.avatar-option').forEach(opt => opt.classList.remove('active'));
-    element.classList.add('active');
-    selectedAvatarIcon = icon;
-}
+// Элементы навигации
+const myNameNav = document.getElementById('myNameNav');
+const myAvatarNav = document.getElementById('myAvatarNav');
 
-authForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const username = document.getElementById('authUsername').value.trim();
-    if (!username) return;
-
-    // Генерируем уникальный ID для владельца профиля
-    const userId = 'usr_' + Math.random().toString(36).substr(2, 9);
-    
-    myUser = { id: userId, name: username, avatar: selectedAvatarIcon };
-    localStorage.setItem('foodgram_user', JSON.stringify(myUser)); // Сохраняем профиль навсегда
-
-    authOverlay.style.display = 'none';
-    initProfileUI();
-    loadAllData();
-});
-
-// Проверяем, создавался ли профиль ранее
-function checkUserAuth() {
+// 🔒 ПРОВЕРКА: Автоматический вход при перезагрузке страницы
+function checkAutoLogin() {
     const savedUser = localStorage.getItem('foodgram_user');
     if (savedUser) {
-        myUser = JSON.parse(savedUser);
-        authOverlay.style.display = 'none';
-        initProfileUI();
-        loadAllData();
+        currentUser = JSON.parse(savedUser);
+        
+        // Показываем данные в шапке сайта
+        myNameNav.textContent = currentUser.username;
+        myAvatarNav.textContent = currentUser.avatar;
+        
+        // Скрываем окно регистрации, если пользователь уже залогинен
+        regOverlay.style.display = 'none';
+        
+        // Загружаем ленту
+        loadFeed();
     } else {
-        authOverlay.style.display = 'flex';
+        // Если пользователя нет в памяти — принудительно открываем окно регистрации
+        regOverlay.style.display = 'flex';
     }
 }
 
-function initProfileUI() {
-    document.getElementById('profileAvatarDisplay').textContent = myUser.avatar;
-    document.getElementById('profileNameDisplay').textContent = myUser.name;
-    document.getElementById('profileNameDisplay').insertAdjacentHTML('beforebegin', `<span style="font-size:0.8rem;color:#ff6b35;font-weight:700;">@ВАШ ПРОФИЛЬ</span><br>`);
-}
+// СОЗДАНИЕ И СОХРАНЕНИЕ ПРОФИЛЯ
+regForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const username = document.getElementById('regUsername').value.trim();
+    const avatar = document.getElementById('regAvatar').value;
+    const bio = document.getElementById('regBio').value.trim();
 
-// ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК (ЛЕНТА, ЧАТ, ПРОФИЛЬ)
-function switchTab(tabId) {
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active-content'));
+    currentUser = {
+        id: 'user_' + Math.random().toString(36).substr(2, 9),
+        username: username,
+        avatar: avatar,
+        bio: bio || 'Люблю готовить! 🍳'
+    };
 
-    const activeBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.outerHTML.includes(tabId.replace('Tab','')));
-    if (activeBtn) activeBtn.classList.add('active');
-    
-    document.getElementById(tabId).classList.add('active-content');
-    loadAllData();
-}
+    // 💾 Сохраняем в память браузера навсегда
+    localStorage.setItem('foodgram_user', JSON.stringify(currentUser));
 
-// ЗАГРУЗКА ВСЕХ ДАННЫХ С СЕРВЕРА RENDER
-function loadAllData() {
+    // Обновляем интерфейс
+    myNameNav.textContent = currentUser.username;
+    myAvatarNav.textContent = currentUser.avatar;
+    regOverlay.style.display = 'none';
+
     loadFeed();
-    loadChat();
-}
+});
 
-// Загрузка главной ленты и личной ленты профиля
+// ЗАГРУЗКА ЛЕНТЫ РЕЦЕПТОВ
 async function loadFeed() {
-    if (!myUser) return;
+    if (!currentUser) return;
     try {
         const res = await fetch(`${SERVER_URL}/api/recipes`);
         const recipes = await res.json();
         
+        const feedContainer = document.getElementById('feedContainer');
         feedContainer.innerHTML = '';
-        myRecipesContainer.innerHTML = '';
+        
+        // Фильтруем посты, если мы находимся на вкладке "Профиль"
+        const filteredRecipes = activeScreen === 'profile' 
+            ? recipes.filter(r => r.userId === currentUser.id)
+            : recipes;
 
-        let myPostsCount = 0;
-
-        if (recipes.length === 0) {
-            const emptyHTML = `<div class="empty-hint">🍊 Тут пока ничего нет. Будьте первыми!</div>`;
-            feedContainer.innerHTML = emptyHTML;
-            myRecipesContainer.innerHTML = emptyHTML;
+        if (filteredRecipes.length === 0) {
+            feedContainer.innerHTML = `<p style="text-align:center;color:#a0a5b5;padding:40px;">Здесь пока пусто...</p>`;
             return;
         }
 
-        recipes.forEach(recipe => {
-            const userChoice = localStorage.getItem(`reaction_${recipe.id}`);
-            const isMyPost = recipe.authorId === myUser.id; // Проверяем, принадлежит ли пост вам
+        filteredRecipes.forEach(recipe => {
+            const storageKey = `reaction_${recipe.id}`;
+            const userChoice = localStorage.getItem(storageKey);
 
-            const cardHTML = `
-                <div class="recipe-card">
-                    <img src="${SERVER_URL}${recipe.img}" alt="${recipe.title}">
-                    <div class="recipe-content">
-                        <div style="font-size:0.85rem;color:#8da2bb;margin-bottom:5px;">Выложил: ${recipe.authorAvatar || '👤'} ${recipe.authorName || 'Аноним'}</div>
-                        <h2>${recipe.title}</h2>
-                        <p>${recipe.desc}</p>
-                        
-                        <div class="card-actions">
-                            <div class="reactions-box">
-                                <button class="reaction-btn ${userChoice === 'like' ? 'active' : ''}" onclick="toggleReaction('${recipe.id}', 'like')">❤️ <span>${recipe.likes || 0}</span></button>
-                                <button class="reaction-btn ${userChoice === 'fire' ? 'active' : ''}" onclick="toggleReaction('${recipe.id}', 'fire')">🔥 <span>${recipe.fire || 0}</span></button>
-                                <button class="reaction-btn ${userChoice === 'yum' ? 'active' : ''}" onclick="toggleReaction('${recipe.id}', 'yum')">🤤 <span>${recipe.yum || 0}</span></button>
-                                <button class="reaction-btn ${userChoice === 'pizza' ? 'active' : ''}" onclick="toggleReaction('${recipe.id}', 'pizza')">🍕 <span>${recipe.pizza || 0}</span></button>
-                            </div>
-                            
-                            <!-- 🗑️ КНОПКА УДАЛЕНИЯ: Видна только владельцу поста -->
-                            ${isMyPost ? `<button class="delete-btn" onclick="deleteRecipe('${recipe.id}')">Удалить</button>` : ''}
-                        </div>
+            const card = document.createElement('div');
+            card.className = 'recipe-card';
+            
+            // Проверяем: если пост создал текущий юзер, добавляем кнопку "Удалить"
+            const deleteButton = recipe.userId === currentUser.id 
+                ? `<button class="delete-btn" onclick="deleteRecipe('${recipe.id}')">Удалить ✕</button>` 
+                : '';
+
+            card.innerHTML = `
+                <div class="card-header">
+                    <div class="author-info">
+                        <span class="author-avatar">${recipe.userAvatar || '👤'}</span>
+                        <span class="author-name">${recipe.author || 'Аноним'}</span>
+                    </div>
+                    ${deleteButton}
+                </div>
+                <img src="${SERVER_URL}${recipe.img}" alt="${recipe.title}">
+                <div class="recipe-content">
+                    <h2>${recipe.title}</h2>
+                    <p>${recipe.desc}</p>
+                    <div class="card-actions">
+                        <button class="reaction-btn ${userChoice === 'like' ? 'active' : ''}" onclick="toggleReaction('${recipe.id}', 'like')">
+                            ❤️ <span>${recipe.likes || 0}</span>
+                        </button>
+                        <button class="reaction-btn ${userChoice === 'fire' ? 'active' : ''}" onclick="toggleReaction('${recipe.id}', 'fire')">
+                            🔥 <span>${recipe.fire || 0}</span>
+                        </button>
+                        <button class="reaction-btn ${userChoice === 'yum' ? 'active' : ''}" onclick="toggleReaction('${recipe.id}', 'yum')">
+                            🤤 <span>${recipe.yum || 0}</span>
+                        </button>
+                        <button class="reaction-btn ${userChoice === 'pizza' ? 'active' : ''}" onclick="toggleReaction('${recipe.id}', 'pizza')">
+                            🍕 <span>${recipe.pizza || 0}</span>
+                        </button>
                     </div>
                 </div>
             `;
-
-            // Добавляем в общую ленту
-            feedContainer.insertAdjacentHTML('beforeend', cardHTML);
-
-            // Если пост ваш — добавляем его копию во вкладку Профиля
-            if (isMyPost) {
-                myPostsCount++;
-                myRecipesContainer.insertAdjacentHTML('beforeend', cardHTML);
-            }
+            feedContainer.appendChild(card);
         });
-
-        document.querySelector('.profile-stats').textContent = `Ваши публикации (${myPostsCount}):`;
-
     } catch (err) {
-        console.error("Ошибка загрузки ленты:", err);
+        console.error(err);
     }
 }
 
-// Публикация поста
-recipeForm.addEventListener('submit', async (e) => {
+// ОТПРАВКА НОВОГО РЕЦЕПТА НА СЕРВЕР С ПРИВЯЗКОЙ К ЮЗЕРУ
+document.getElementById('recipeForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!myUser) return;
 
     const title = document.getElementById('recipeTitle').value.trim();
     const fileInput = document.getElementById('recipeFile');
@@ -149,40 +140,45 @@ recipeForm.addEventListener('submit', async (e) => {
     formData.append('title', title);
     formData.append('recipeImage', fileInput.files[0]);
     formData.append('desc', desc);
-    formData.append('authorId', myUser.id);
-    formData.append('authorName', myUser.name);
-    formData.append('authorAvatar', myUser.avatar);
+    
+    // Передаем данные автора, чтобы сервер сохранил их в общую базу рецептов
+    formData.append('userId', currentUser.id);
+    formData.append('author', currentUser.username);
+    formData.append('userAvatar', currentUser.avatar);
 
     try {
-        const res = await fetch(`${SERVER_URL}/api/recipes`, { method: 'POST', body: formData });
+        const res = await fetch(`${SERVER_URL}/api/recipes`, {
+            method: 'POST',
+            body: formData
+        });
+
         if (res.ok) {
-            recipeForm.reset();
-            toggleModal('recipeModal', false);
+            document.getElementById('recipeForm').reset();
+            toggleModal(false);
             loadFeed();
         }
     } catch (err) {
-        alert('Не удалось выложить рецепт.');
+        alert('Не удалось опубликовать рецепт.');
     }
 });
 
-// Удаление своего поста
+// УДАЛЕНИЕ СОБСТВЕННОГО ПОСТА
 async function deleteRecipe(id) {
-    if (!confirm('Вы точно хотите удалить этот рецепт?')) return;
+    if (!confirm('Вы уверены, что хотите удалить эту публикацию?')) return;
+
     try {
         const res = await fetch(`${SERVER_URL}/api/recipes/${id}`, {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: myUser.id }) // Отправляем ID для проверки безопасности
+            method: 'DELETE'
         });
         if (res.ok) {
-            loadFeed();
+            loadFeed(); // Перерисовываем ленту после удаления постов
         }
     } catch (err) {
         alert('Ошибка при удалении поста.');
     }
 }
 
-// Умные эмодзи-реакции
+// УМНЫЕ РЕАКЦИИ
 async function toggleReaction(recipeId, type) {
     const storageKey = `reaction_${recipeId}`;
     const previousReaction = localStorage.getItem(storageKey);
@@ -203,55 +199,46 @@ async function toggleReaction(recipeId, type) {
     }
 
     try {
-        const res = await fetch(`${SERVER_URL}/api/recipes/${recipeId}/reaction`, {
+        await fetch(`${SERVER_URL}/api/recipes/${recipeId}/reaction`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ type, action })
         });
-        if (res.ok) loadFeed();
+        loadFeed();
     } catch (err) {}
 }
 
-// ОБЩИЙ ЧАТ КУЛИНАРОВ
-async function loadChat() {
-    try {
-        const res = await fetch(`${SERVER_URL}/api/chat`);
-        const messages = await res.json();
-        
-        chatMessages.innerHTML = '';
-        messages.forEach(m => {
-            const isMyMsg = m.authorId === myUser.id;
-            const msgHTML = `
-                <div class="chat-msg ${isMyMsg ? 'my-msg' : 'other-msg'}">
-                    <span class="msg-author">${m.avatar} ${m.author}</span>
-                    <span class="msg-text">${m.text}</span>
-                    <span class="msg-time">${m.time}</span>
-                </div>
-            `;
-            chatMessages.insertAdjacentHTML('beforeend', msgHTML);
-        });
-        chatMessages.scrollTop = chatMessages.scrollHeight; // Плавный автоскролл вниз к новым сообщениям
-    } catch (err) {}
+// НАВИГАЦИЯ МЕЖДУ ЭКРАНАМИ
+function showScreen(screen) {
+    activeScreen = screen;
+    
+    // Смена активных классов у кнопок меню
+    document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+    document.getElementById(screen + 'Link').classList.add('active');
+
+    // Переключаем отображение блоков
+    const feedSection = document.getElementById('feedContainer');
+    const profileSection = document.getElementById('profileContainer');
+    const chatSection = document.getElementById('chatContainer');
+
+    feedSection.style.display = (screen === 'feed' || screen === 'profile') ? 'flex' : 'none';
+    profileSection.style.display = screen === 'profile' ? 'block' : 'none';
+    chatSection.style.display = screen === 'chat' ? 'flex' : 'none';
+
+    if (screen === 'profile' && currentUser) {
+        // Заполняем карточку профиля
+        profileName.textContent = currentUser.username;
+        profileAvatar.textContent = currentUser.avatar;
+        profileBio.textContent = currentUser.bio;
+    }
+
+    loadFeed(); // Обновляем ленту с учетом фильтрации
 }
 
-// Отправка сообщений в чат
-function sendChatMessage() {
-    const text = chatMessageInput.value.trim();
-    if (!text || !myUser) return;
-
-    fetch(`${SERVER_URL}/api/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ authorId: myUser.id, author: myUser.name, avatar: myUser.avatar, text })
-    })
-    .then(() => {
-        chatMessageInput.value = '';
-        loadChat();
-    });
+// Функции окон
+function toggleModal(show) {
+    document.getElementById('modalOverlay').style.display = show ? 'flex' : 'none';
 }
 
-sendMsgBtn.addEventListener('click', sendChatMessage);
-chatMessageInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendChatMessage(); });
-
-function toggleModal(id, show) {document.getElementById(id).style.display = show ? 'flex' : 'none';}// Живое автоматическое обновление сообщений чата каждые 3 секундыsetInterval(() => {if (document.getElementById('chatTab').classList.contains('active-content')) {loadChat();}}, 3000);// Запуск приложенияcheckUserAuth();
-
+// ЗАПУСК ПРОВЕРКИ ПРИ ЗАГРУЗКЕ СТРАНИЦЫ
+checkAutoLogin();

@@ -1,0 +1,231 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Poppins', sans-serif;
+}
+
+body {
+    background-color: #0d0e12; /* Глубокий премиальный черный */
+    color: #f5f5f7;
+    overflow-x: hidden;
+}
+
+/* ШАПКА */
+.navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 70px;
+    background: rgba(19, 20, 26, 0.8);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid #232530;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 30px;
+    z-index: 100;
+}
+
+.logo {
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+
+.logo span {
+    color: #ff6b35; /* Огненный оранжевый */
+}
+
+.add-recipe-btn {
+    background: linear-gradient(135deg, #ff6b35, #ff8c42);
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    font-weight: 600;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: 0.3s;
+    box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+}
+
+.add-recipe-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 107, 53, 0.5);
+}
+
+/* ЛЕНТА РЕЦЕПТОВ СО СКРОЛЛОМ */
+.feed-container {
+    max-width: 600px;
+    margin: 100px auto 40px;
+    padding: 0 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+/* КАРТОЧКА БЛЮДА */
+.recipe-card {
+    background-color: #13141a;
+    border: 1px solid #232530;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    transition: 0.3s;
+}
+
+.recipe-card:hover {
+    border-color: #3e4257;
+}
+
+.recipe-card img {
+    width: 100%;
+    height: 400px;
+    object-fit: cover; /* Фотографии не будут сжиматься */
+    display: block;
+}
+
+.recipe-content {
+    padding: 20px;
+}
+
+.recipe-content h2 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: #fff;
+}
+
+.recipe-content p {
+    color: #a0a5b5;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: 15px;
+}
+
+/* ИНТЕРФЕЙС ЛАЙКОВ */
+.card-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.like-btn {
+    background: none;
+    border: 1px solid #3a3d52;
+    color: #fff;
+    font-size: 1.1rem;
+    padding: 6px 15px;
+    border-radius: 15px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: 0.2s;
+}
+
+.like-btn:hover {
+    background: rgba(255, 107, 53, 0.1);
+    border-color: #ff6b35;
+}
+
+.like-btn.liked {
+    background: #ff6b35;
+    border-color: #ff6b35;
+    color: #fff;
+    font-weight: 600;
+}
+
+/* МОДАЛЬНОЕ ОКНО */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(5, 5, 8, 0.85);
+    backdrop-filter: blur(8px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-box {
+    background: #13141a;
+    border: 1px solid #232530;
+    padding: 30px;
+    border-radius: 20px;
+    width: 100%;
+    max-width: 450px;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: #a0a5b5;
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+.modal-box input, .modal-box textarea {
+    width: 100%;
+    padding: 12px;
+    background: #0d0e12;
+    border: 1px solid #232530;
+    border-radius: 10px;
+    color: white;
+    margin-bottom: 15px;
+    outline: none;
+    font-size: 0.95rem;
+}
+
+.modal-box input:focus, .modal-box textarea:focus {
+    border-color: #ff6b35;
+}
+
+.submit-btn {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, #ff6b35, #ff8c42);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+}
+/* Красивая кнопка выбора файла */
+.file-upload-box {
+    margin-bottom: 15px;
+    text-align: left;
+}
+
+.file-upload-box label {
+    display: block;
+    padding: 12px;
+    background: #0d0e12;
+    border: 1px dashed #3a3d52;
+    border-radius: 10px;
+    color: #ff6b35;
+    text-align: center;
+    cursor: pointer;
+    font-weight: 600;
+    transition: 0.2s;
+}
+
+.file-upload-box label:hover {
+    border-color: #ff6b35;
+    background: rgba(255, 107, 53, 0.05);
+}
+
+.file-upload-box input[type="file"] {
+    display: none; /* Прячем некрасивую стандартную кнопку браузера */
+}

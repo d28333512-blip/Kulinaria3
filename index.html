@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FoodGram — Мега Кулинария</title>
+    <link href="https://googleapis.com" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- ШАПКА САЙТА -->
+    <header class="navbar">
+        <div class="logo">🍊 Food<span>Gram</span></div>
+        <button class="add-recipe-btn" onclick="toggleModal(true)">+ Выложить блюдо</button>
+    </header>
+
+    <!-- ГЛАВНЫЙ КОНТЕНТ (ЛЕНТА С СОЧНЫМ СКРОЛЛОМ) -->
+    <main class="feed-container" id="feedContainer">
+        <!-- Сюда будут красиво вставать посты кулинаров -->
+    </main>
+
+    <!-- МОДАЛЬНОЕ ОКНО: ДОБАВЛЕНИЕ БЛЮДА -->
+    <div class="modal-overlay" id="modalOverlay" style="display: none;">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>Поделиться кулинарным шедевром</h3>
+                <button class="close-btn" onclick="toggleModal(false)">✕</button>
+            </div>
+            <!-- Важно: форма теперь умеет отправлять файлы благодаря enctype -->
+            <form id="recipeForm" enctype="multipart/form-data">
+                <input type="text" id="recipeTitle" placeholder="Название блюда (например, Сочная Пицца)" required>
+                
+                <!-- НАСТОЯЩИЙ ВЫБОР ФАЙЛА КАРТИНКИ С ПК -->
+                <div class="file-upload-box">
+                    <label for="recipeFile">📁 Выберите фото блюда</label>
+                    <input type="file" id="recipeFile" accept="image/*" required>
+                </div>
+
+                <textarea id="recipeDesc" placeholder="Опишите процесс приготовления или ингредиенты..." rows="4" required></textarea>
+                <button type="submit" class="submit-btn">Опубликовать в ленту</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

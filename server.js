@@ -2,28 +2,46 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
-const multer = require('multer'); // Библиотека для загрузки файлов
+const multer = require('multer');
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 
-// Делаем папку с картинками доступной для сайта
+// Делаем папки доступными для скачивания файлов сайтом
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-const DB_FILE = path.join(__dirname, 'recipes.json');
+// Пути к нашей структурированной базе данных (Data Store)
+const DB_DIR = path.join(__dirname, 'data_store');
+const USERS_FILE = path.join(DB_DIR, 'users.json');
+const RECIPES_FILE = path.join(DB_DIR, 'recipes.json');
+const CHAT_FILE = path.join(DB_DIR, 'chat.json');
 const UPLOADS_DIR = path.join(__dirname, 'uploads');
 
-// Автоматически создаем папку для картинок, если её нет
-if (!fs.existsSync(UPLOADS_DIR)) {
-    fs.mkdirSync(UPLOADS_DIR);
+// Автоматически создаем все папки, если их нет на сервере
+if (!fs.existsSync(DB_DIR)) fs.mkdirSync(DB_DIR);
+if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR);
+
+// Помощники для безопасного чтения и записи файлов базы
+function readData(filePath, initialValue = []) {
+    if (!fs.existsSync(filePath)) {
+        fs.writeFileSync(filePath, JSON.stringify(initialValue, null, 2));
+        return initialValue;
+    }
+    try {
+        return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    } catch (e) {
+        return initialValue;
+    }
 }
 
-// Настройка сохранения файлов картинок
+function writeData(filePath, data) {
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
+}
+
+// Настройка приема картинок с компьютера
 const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, UPLOADS_DIR);
-    },
+    destination: function (req, file, cb) { cb(null, UPLOADS_DIR); },
     filename: function (req, file, cb) {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
         cb(null, uniqueSuffix + path.extname(file.originalname));
@@ -31,86 +49,111 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-function readDB() {
-    // База изначально чистая — рецептов нет, пока кто-то не выложит!
-    if (!fs.existsSync(DB_FILE)) {
-        fs.writeFileSync(DB_FILE, JSON.stringify([], null, 2));
-        return [];
-    }
-    try {
-        return JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
-    } catch (e) {
-        return [];
-    }
-}
+// ================= РОУТЫ ДЛЯ АККАУНТОВ (ВХОД И СОХРАНЕНИЕ) =================
+app.post('/api/auth/login', (req, res) => {
+    const { username, avatar, bio } = req.body;
+    if (!username) return res.status(400).json({ message: "Введите имя!" });
 
-function writeDB(data) {
-    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf8');
-}
+    const users = readData(USERS_FILE);
+    
+    // Ищем, есть ли уже такой пользователь в папке data_store
+    let user = users.find(u => u.username.toLowerCase() === username.toLowerCase());
+    
+    if (!user) {
+        // Если аккаунт новый — регистрируем и сохраняем его в папку
+        user = {
+            id: 'user_' + Math.random().toString(36).substr(2, 9),
+            username,
+            avatar: avatar || '👤',
+            bio: bio || 'Люблю готовить! 🍳'
+        };
+        users.push(user);
+        writeData(USERS_FILE, users);
+        console.log(`[БАЗА] Зарегистрирован новый повар: ${username}`);
+    } else {
+        console.log(`[БАЗА] Успешный вход в аккаунт: ${username}`);
+    }
 
-// 1. ПОЛУЧИТЬ ВСЕ РЕЦЕПТЫ ЛЕНТЫ
-app.get('/api/recipes', (req, res) => {
-    res.json(readDB());
+    res.json(user);
 });
 
-// 2. ОПУБЛИКОВАТЬ ПОСТ С РЕАЛЬНОЙ КАРТИНКОЙ С ПК
-app.post('/api/recipes', upload.single('recipeImage'), (req, res) => {
-    const { title, desc } = req.body;
-    
-    if (!req.file) {
-        return res.status(400).json({ message: "Пожалуйста, выберите файл фотографии!" });
-    }
+// ================= РОУТЫ ДЛЯ ЛЕНТЫ ПУБЛИКАЦИЙ =================
+app.get('/api/recipes', (req, res) => {
+    res.json(readData(RECIPES_FILE));
+});
 
-    const db = readDB();
+app.post('/api/recipes', upload.single('recipeImage'), (req, res) => {
+    const { title, desc, userId, author, userAvatar } = req.body;
+    if (!req.file) return res.status(400).json({ message: "Загрузите фото блюда!" });
+
+    const recipes = readData(RECIPES_FILE);
     const imagePath = "/uploads/" + req.file.filename;
 
     const newRecipe = {
         id: 'rec_' + Math.random().toString(36).substr(2, 9),
+        userId,
+        author,
+        userAvatar,
         title,
         img: imagePath,
         desc,
-        likes: 0,
-        fire: 0,
-        yum: 0,
-        pizza: 0
+        likes: 0, fire: 0, yum: 0, pizza: 0
     };
 
-    db.unshift(newRecipe); // Новый пост всегда сверху ленты
-    writeDB(db);
+    recipes.unshift(newRecipe); // Новые рецепты всегда вверху
+    writeData(RECIPES_FILE, recipes);
     res.status(201).json(newRecipe);
 });
 
-// 3. УМНАЯ ОБРАБОТКА ЭМОЦИЙ-РЕАКЦИЙ (Только 1 клик на пост)
+app.delete('/api/recipes/:id', (req, res) => {
+    const { id } = req.params;
+    let recipes = readData(RECIPES_FILE);
+    recipes = recipes.filter(r => r.id !== id);
+    writeData(RECIPES_FILE, recipes);
+    res.json({ message: "Пост удален!" });
+});
+
+// Реакции под публикациями
 app.post('/api/recipes/:id/reaction', (req, res) => {
     const { id } = req.params;
-    const { type, action } = req.body; // type: 'like', 'fire', 'yum', 'pizza'. action: 'add', 'remove'
-    const db = readDB();
+    const { type, action } = req.body;
+    const recipes = readData(RECIPES_FILE);
 
-    const recipe = db.find(r => r.id === id);
-    if (!recipe) return res.status(404).json({ message: "Рецепт не найден" });
+    const recipe = recipes.find(r => r.id === id);
+    if (!recipe) return res.status(404).json({ message: "Не найдено" });
 
-    // Если у рецепта ещё нет полей для новых эмоций — создаем их с нуля
-    if (!recipe.likes) recipe.likes = 0;
-    if (!recipe.fire) recipe.fire = 0;
-    if (!recipe.yum) recipe.yum = 0;
-    if (!recipe.pizza) recipe.pizza = 0;
+    let field = type === 'fire' ? 'fire' : type === 'yum' ? 'yum' : type === 'pizza' ? 'pizza' : 'likes';
+    
+    if (!recipe[field]) recipe[field] = 0;
+    recipe[field] = action === 'add' ? recipe[field] + 1 : Math.max(0, recipe[field] - 1);
 
-    let field = 'likes';
-    if (type === 'fire') field = 'fire';
-    if (type === 'yum') field = 'yum';
-    if (type === 'pizza') field = 'pizza';
-
-    // Увеличиваем или уменьшаем счётчик эмоций
-    if (action === 'add') {
-        recipe[field] += 1;
-    } else if (action === 'remove' && recipe[field] > 0) {
-        recipe[field] -= 1;
-    }
-
-    writeDB(db);
+    writeData(RECIPES_FILE, recipes);
     res.json(recipe);
 });
 
-// 🎯 УМНЫЙ ЗАПУСК ПОРТА (Строго в самом низу файла после всех настроек!)
+// ================= РОУТЫ ДЛЯ ОБЩЕГО ЧАТА (СКРОЛЛ) =================
+app.get('/api/chat', (req, res) => {
+    res.json(readData(CHAT_FILE));
+});
+
+app.post('/api/chat', (req, res) => {
+    const { userId, username, avatar, text } = req.body;
+    if (!text) return res.sendStatus(400);
+
+    const messages = readData(CHAT_FILE);
+    const newMessage = {
+        id: Date.now(),
+        userId,
+        username,
+        avatar,
+        text,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+
+    messages.push(newMessage);
+    writeData(CHAT_FILE, messages);
+    res.status(201).json(newMessage);
+});
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Кулинарный сервер успешно запущен в интернете на порту ${PORT}`));
+app.listen(PORT, () => console.log(`Мега-сервер кулинаров запущен в сети на порту ${PORT}`));

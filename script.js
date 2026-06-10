@@ -1,244 +1,225 @@
-// ВСТАВЬТЕ СЮДА СВОЮ ССЫЛКУ НА СЕРВЕР RENDER (БЕЗ КОСОЙ ЧЕРТЫ В КОНЦЕ):
-const SERVER_URL = 'https://onrender.com'; 
+// ВСТАВЬТЕ СЮДА ВАШУ ССЫЛКУ НА СЕРВЕР RENDER (БЕЗ КОСОЙ ЧЕРТЫ В КОНЦЕ):
+const SERVER_URL = 'https://kulinaria3.onrender.com'; 
 
-let currentUser = null; // Текущий пользователь
-let activeScreen = 'feed'; // Активный экран (feed / profile / chat)
+let currentUser = null; 
+let activeScreen = 'feed'; 
 
-// Элементы формы профиля
 const regOverlay = document.getElementById('regOverlay');
 const regForm = document.getElementById('regForm');
-const profileName = document.getElementById('profileName');
-const profileBio = document.getElementById('profileBio');
-const profileAvatar = document.getElementById('profileAvatar');
+const feedContainer = document.getElementById('feedContainer');
+const chatMessages = document.getElementById('chatMessages');
 
-// Элементы навигации
-const myNameNav = document.getElementById('myNameNav');
-const myAvatarNav = document.getElementById('myAvatarNav');
-
-// 🔒 ПРОВЕРКА: Автоматический вход при перезагрузке страницы
-function checkAutoLogin() {
+// 🔒 СИСТЕМА ВХОДА И СОХРАНЕНИЯ АККАУНТА
+async function checkLogin() {
     const savedUser = localStorage.getItem('foodgram_user');
     if (savedUser) {
         currentUser = JSON.parse(savedUser);
-        
-        // Показываем данные в шапке сайта
-        myNameNav.textContent = currentUser.username;
-        myAvatarNav.textContent = currentUser.avatar;
-        
-        // Скрываем окно регистрации, если пользователь уже залогинен
         regOverlay.style.display = 'none';
-        
-        // Загружаем ленту
         loadFeed();
+        startPolling(); // Начинаем ежесекундное обновление данных
     } else {
-        // Если пользователя нет в памяти — принудительно открываем окно регистрации
         regOverlay.style.display = 'flex';
     }
 }
 
-// СОЗДАНИЕ И СОХРАНЕНИЕ ПРОФИЛЯ
-regForm.addEventListener('submit', (e) => {
+regForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const username = document.getElementById('regUsername').value.trim();
     const avatar = document.getElementById('regAvatar').value;
     const bio = document.getElementById('regBio').value.trim();
 
-    currentUser = {
-        id: 'user_' + Math.random().toString(36).substr(2, 9),
-        username: username,
-        avatar: avatar,
-        bio: bio || 'Люблю готовить! 🍳'
-    };
-
-    // 💾 Сохраняем в память браузера навсегда
-    localStorage.setItem('foodgram_user', JSON.stringify(currentUser));
-
-    // Обновляем интерфейс
-    myNameNav.textContent = currentUser.username;
-    myAvatarNav.textContent = currentUser.avatar;
-    regOverlay.style.display = 'none';
-
-    loadFeed();
+    // Шлем запрос на сервер Render для входа/регистрации аккаунта
+    const res = await fetch(`${SERVER_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, avatar, bio })
+    });
+    
+    if (res.ok) {
+        currentUser = await res.json();
+        localStorage.setItem('foodgram_user', JSON.stringify(currentUser)); // Запоминаем в браузере
+        regOverlay.style.display = 'none';
+        loadFeed();
+        startPolling();
+    } else {
+        alert('Ошибка при входе');
+    }
 });
 
-// ЗАГРУЗКА ЛЕНТЫ РЕЦЕПТОВ
+// ЛЕНТА ПУБЛИКАЦИЙ (ПОДПИСЬ ОТ КОГО)
 async function loadFeed() {
-    if (!currentUser) return;
+    if (!currentUser || activeScreen === 'chat') return;
     try {
         const res = await fetch(`${SERVER_URL}/api/recipes`);
         const recipes = await res.json();
         
-        const feedContainer = document.getElementById('feedContainer');
-        feedContainer.innerHTML = '';
-        
-        // Фильтруем посты, если мы находимся на вкладке "Профиль"
-        const filteredRecipes = activeScreen === 'profile' 
-            ? recipes.filter(r => r.userId === currentUser.id)
-            : recipes;
+        if (activeScreen === 'feed') {
+            document.getElementById('profileContainer').style.display = 'none';
+            feedContainer.style.display = 'flex';
+        }
 
-        if (filteredRecipes.length === 0) {
-            feedContainer.innerHTML = `<p style="text-align:center;color:#a0a5b5;padding:40px;">Здесь пока пусто...</p>`;
+        feedContainer.innerHTML = '';
+        const filtered = activeScreen === 'profile' ? recipes.filter(r => r.userId === currentUser.id) : recipes;
+
+        if (filtered.length === 0) {
+            feedContainer.innerHTML = '<p style="text-align:center;color:#a0a5b5;padding:20px;">Тут пока ничего нет...</p>';
             return;
         }
 
-        filteredRecipes.forEach(recipe => {
-            const storageKey = `reaction_${recipe.id}`;
-            const userChoice = localStorage.getItem(storageKey);
+        filtered.forEach(recipe => {
+            const userChoice = localStorage.getItem(`reaction_${recipe.id}`);
+            const delBtn = recipe.userId === currentUser.id ? `<button class="delete-btn" onclick="deleteRecipe('${recipe.id}')">Удалить ✕</button>` : '';
 
             const card = document.createElement('div');
             card.className = 'recipe-card';
-            
-            // Проверяем: если пост создал текущий юзер, добавляем кнопку "Удалить"
-            const deleteButton = recipe.userId === currentUser.id 
-                ? `<button class="delete-btn" onclick="deleteRecipe('${recipe.id}')">Удалить ✕</button>` 
-                : '';
-
             card.innerHTML = `
                 <div class="card-header">
                     <div class="author-info">
-                        <span class="author-avatar">${recipe.userAvatar || '👤'}</span>
-                        <span class="author-name">${recipe.author || 'Аноним'}</span>
+                        <span class="author-avatar">${recipe.userAvatar || '👨‍🍳'}</span>
+                        <span class="author-name">${recipe.author}</span> <!-- ПИШЕТ ОТ КОГО ПОСТ -->
                     </div>
-                    ${deleteButton}
+                    ${delBtn}
                 </div>
-                <img src="${SERVER_URL}${recipe.img}" alt="${recipe.title}">
+                <img src="${SERVER_URL}${recipe.img}">
                 <div class="recipe-content">
                     <h2>${recipe.title}</h2>
                     <p>${recipe.desc}</p>
                     <div class="card-actions">
-                        <button class="reaction-btn ${userChoice === 'like' ? 'active' : ''}" onclick="toggleReaction('${recipe.id}', 'like')">
-                            ❤️ <span>${recipe.likes || 0}</span>
-                        </button>
-                        <button class="reaction-btn ${userChoice === 'fire' ? 'active' : ''}" onclick="toggleReaction('${recipe.id}', 'fire')">
-                            🔥 <span>${recipe.fire || 0}</span>
-                        </button>
-                        <button class="reaction-btn ${userChoice === 'yum' ? 'active' : ''}" onclick="toggleReaction('${recipe.id}', 'yum')">
-                            🤤 <span>${recipe.yum || 0}</span>
-                        </button>
-                        <button class="reaction-btn ${userChoice === 'pizza' ? 'active' : ''}" onclick="toggleReaction('${recipe.id}', 'pizza')">
-                            🍕 <span>${recipe.pizza || 0}</span>
-                        </button>
+                        <button class="reaction-btn ${userChoice==='like'?'active':''}" onclick="toggleReaction('${recipe.id}','like')">❤️ <span>${recipe.likes||0}</span></button>
+                        <button class="reaction-btn ${userChoice==='fire'?'active':''}" onclick="toggleReaction('${recipe.id}','fire')">🔥 <span>${recipe.fire||0}</span></button>
+                        <button class="reaction-btn ${userChoice==='yum'?'active':''}" onclick="toggleReaction('${recipe.id}','yum')">🤤 <span>${recipe.yum||0}</span></button>
+                        <button class="reaction-btn ${userChoice==='pizza'?'active':''}" onclick="toggleReaction('${recipe.id}','pizza')">🍕 <span>${recipe.pizza||0}</span></button>
                     </div>
                 </div>
             `;
             feedContainer.appendChild(card);
         });
-    } catch (err) {
-        console.error(err);
-    }
+    } catch (err) {}
 }
 
-// ОТПРАВКА НОВОГО РЕЦЕПТА НА СЕРВЕР С ПРИВЯЗКОЙ К ЮЗЕРУ
+// СОЗДАНИЕ ПУБЛИКАЦИИ
 document.getElementById('recipeForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-
-    const title = document.getElementById('recipeTitle').value.trim();
-    const fileInput = document.getElementById('recipeFile');
-    const desc = document.getElementById('recipeDesc').value.trim();
-
     const formData = new FormData();
-    formData.append('title', title);
-    formData.append('recipeImage', fileInput.files[0]);
-    formData.append('desc', desc);
-    
-    // Передаем данные автора, чтобы сервер сохранил их в общую базу рецептов
+    formData.append('title', document.getElementById('recipeTitle').value.trim());
+    formData.append('recipeImage', document.getElementById('recipeFile').files[0]);
+    formData.append('desc', document.getElementById('recipeDesc').value.trim());
     formData.append('userId', currentUser.id);
     formData.append('author', currentUser.username);
     formData.append('userAvatar', currentUser.avatar);
 
-    try {
-        const res = await fetch(`${SERVER_URL}/api/recipes`, {
-            method: 'POST',
-            body: formData
-        });
-
-        if (res.ok) {
-            document.getElementById('recipeForm').reset();
-            toggleModal(false);
-            loadFeed();
-        }
-    } catch (err) {
-        alert('Не удалось опубликовать рецепт.');
+    const res = await fetch(`${SERVER_URL}/api/recipes`, { method: 'POST', body: formData });
+    if (res.ok) {
+        document.getElementById('recipeForm').reset();
+        toggleModal(false);
+        loadFeed();
     }
 });
 
-// УДАЛЕНИЕ СОБСТВЕННОГО ПОСТА
 async function deleteRecipe(id) {
-    if (!confirm('Вы уверены, что хотите удалить эту публикацию?')) return;
-
-    try {
-        const res = await fetch(`${SERVER_URL}/api/recipes/${id}`, {
-            method: 'DELETE'
-        });
-        if (res.ok) {
-            loadFeed(); // Перерисовываем ленту после удаления постов
-        }
-    } catch (err) {
-        alert('Ошибка при удалении поста.');
+    if (confirm('Удалить этот пост?')) {
+        await fetch(`${SERVER_URL}/api/recipes/${id}`, { method: 'DELETE' });
+        loadFeed();
     }
 }
+
+// ЖИВОЙ КУЛИНАРНЫЙ ЧАТ (ОТ КОГО СООБЩЕНИЕ + СКРОЛЛ)
+async function loadChat() {
+    if (activeScreen !== 'chat') return;
+    try {
+        const res = await fetch(`${SERVER_URL}/api/chat`);
+        const messages = await res.json();
+        
+        // Запоминаем положение скролла перед обновлением
+        const shouldScroll = chatMessages.scrollTop + chatMessages.clientHeight >= chatMessages.scrollHeight - 50;
+
+        chatMessages.innerHTML = '';
+        messages.forEach(m => {
+            const isMe = m.userId === currentUser.id;
+            const row = document.createElement('div');
+            row.className = `chat-msg-row ${isMe ? 'my-msg' : ''}`;
+            row.innerHTML = `
+                <div class="avatar">${m.avatar}</div>
+                <div class="chat-text-box">
+                    <div class="chat-sender-name">${m.username}</div> <!-- ПИШЕТ ОТ КОГО СООБЩЕНИЕ -->
+                    <div class="chat-text">${m.text}</div>
+                    <span class="chat-msg-time">${m.time}</span>
+                </div>
+            `;
+            chatMessages.appendChild(row);
+        });
+
+        // Плавный скролл вниз к свежим сообщениям 📜
+        if (shouldScroll || chatMessages.innerHTML === '') {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+    } catch (e) {}
+}
+
+// ОТПРАВКА СООБЩЕНИЯ В ЧАТ
+function sendChatMessage() {
+    const input = document.getElementById('chatInput');
+    const text = input.value.trim();
+    if (!text) return;
+
+    fetch(`${SERVER_URL}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: currentUser.id, username: currentUser.username, avatar: currentUser.avatar, text })
+    }).then(() => {
+        input.value = '';
+        loadChat();
+    });
+}
+
+document.getElementById('chatSendBtn').addEventListener('click', sendChatMessage);
+document.getElementById('chatInput').addEventListener('keypress', (e) => { if(e.key === 'Enter') sendChatMessage(); });
 
 // УМНЫЕ РЕАКЦИИ
 async function toggleReaction(recipeId, type) {
-    const storageKey = `reaction_${recipeId}`;
-    const previousReaction = localStorage.getItem(storageKey);
+    const key = `reaction_${recipeId}`;
+    const prev = localStorage.getItem(key);
     let action = 'add';
-
-    if (previousReaction === type) {
-        action = 'remove';
-        localStorage.removeItem(storageKey);
-    } else {
-        if (previousReaction) {
-            await fetch(`${SERVER_URL}/api/recipes/${recipeId}/reaction`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ type: previousReaction, action: 'remove' })
-            });
-        }
-        localStorage.setItem(storageKey, type);
+    if (prev === type) { action = 'remove'; localStorage.removeItem(key); }
+    else {
+        if (prev) await fetch(`${SERVER_URL}/api/recipes/${recipeId}/reaction`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: prev, action: 'remove' }) });
+        localStorage.setItem(key, type);
     }
-
-    try {
-        await fetch(`${SERVER_URL}/api/recipes/${recipeId}/reaction`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type, action })
-        });
-        loadFeed();
-    } catch (err) {}
+    await fetch(`${SERVER_URL}/api/recipes/${recipeId}/reaction`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type, action }) });
+    loadFeed();
 }
 
-// НАВИГАЦИЯ МЕЖДУ ЭКРАНАМИ
+// УПРАВЛЕНИЕ НАВИГАЦИЕЙ ЭКРАНОВ
 function showScreen(screen) {
     activeScreen = screen;
-    
-    // Смена активных классов у кнопок меню
-    document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
     document.getElementById(screen + 'Link').classList.add('active');
 
-    // Переключаем отображение блоков
-    const feedSection = document.getElementById('feedContainer');
-    const profileSection = document.getElementById('profileContainer');
-    const chatSection = document.getElementById('chatContainer');
+    document.getElementById('feedContainer').style.display = (screen === 'feed' || screen === 'profile') ? 'flex' : 'none';
+    document.getElementById('profileContainer').style.display = screen === 'profile' ? 'block' : 'none';
+    document.getElementById('chatContainer').style.display = screen === 'chat' ? 'flex' : 'none';
 
-    feedSection.style.display = (screen === 'feed' || screen === 'profile') ? 'flex' : 'none';
-    profileSection.style.display = screen === 'profile' ? 'block' : 'none';
-    chatSection.style.display = screen === 'chat' ? 'flex' : 'none';
-
-    if (screen === 'profile' && currentUser) {
-        // Заполняем карточку профиля
-        profileName.textContent = currentUser.username;
-        profileAvatar.textContent = currentUser.avatar;
-        profileBio.textContent = currentUser.bio;
+    if (screen === 'profile') {
+        document.getElementById('profileName').textContent = currentUser.username;
+        document.getElementById('profileAvatar').textContent = currentUser.avatar;
+        document.getElementById('profileBio').textContent = currentUser.bio;
     }
-
-    loadFeed(); // Обновляем ленту с учетом фильтрации
+    
+    if (screen === 'chat') {
+        loadChat();
+    } else {
+        loadFeed();
+    }
 }
 
-// Функции окон
-function toggleModal(show) {
-    document.getElementById('modalOverlay').style.display = show ? 'flex' : 'none';
+function toggleModal(show) { document.getElementById('modalOverlay').style.display = show ? 'flex' : 'none'; }
+
+// Постоянный фоновый опрос обновлений раз в 2 секунды
+function startPolling() {
+    setInterval(() => {
+        if (activeScreen === 'chat') loadChat();
+        else loadFeed();
+    }, 2000);
 }
 
-// ЗАПУСК ПРОВЕРКИ ПРИ ЗАГРУЗКЕ СТРАНИЦЫ
-checkAutoLogin();
+checkLogin();

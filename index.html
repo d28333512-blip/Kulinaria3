@@ -3,38 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FoodGram — Мега Кулинария</title>
+    <title>FoodGram PRO</title>
     <link href="https://googleapis.com" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- ШАПКА САЙТА -->
+    <!-- ОКНО РЕГИСТРАЦИИ (ПОКАЗЫВАЕТСЯ ПРИ СТАРТЕ) -->
+    <div class="auth-overlay" id="authOverlay">
+        <div class="auth-box">
+            <h2>Создание профиля FoodGram</h2>
+            <p class="auth-hint">Выберите аватарку и придумайте уникальный никнейм</p>
+            <div class="avatar-picker">
+                <span class="av-item active" onclick="selectAuthAvatar('🍊')">🍊</span>
+                <span class="av-item" onclick="selectAuthAvatar('🍳')">🍳</span>
+                <span class="av-item" onclick="selectAuthAvatar('🍕')">🍕</span>
+                <span class="av-item" onclick="selectAuthAvatar('🧁')">🧁</span>
+                <span class="av-item" onclick="selectAuthAvatar('🥑')">🥑</span>
+            </div>
+            <input type="text" id="authUsername" placeholder="Ваш никнейм (например, Chef_Danya)" required>
+            <button id="saveProfileBtn">Создать профиль и Войти</button>
+        </div>
+    </div>
+
+    <!-- ВЕРХНЯЯ ШАПКА -->
     <header class="navbar">
         <div class="logo">🍊 Food<span>Gram</span></div>
-        <button class="add-recipe-btn" onclick="toggleModal(true)">+ Выложить блюдо</button>
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="switchTab('feed')">Лента</button>
+            <button class="nav-tab" onclick="switchTab('chat')">Чат</button>
+            <button class="nav-tab" onclick="switchTab('profile')">Профиль</button>
+        </div>
     </header>
 
-    <!-- ГЛАВНЫЙ КОНТЕНТ -->
-    <main class="feed-container" id="feedContainer">
-        <!-- Рецепты будут загружаться сюда -->
+    <!-- СЕКЦИЯ 1: ОБЩАЯ ЛЕНТА -->
+    <main class="page-section" id="feedPage">
+        <div class="feed-header">
+            <button class="add-recipe-btn" onclick="toggleModal(true)">+ Поделиться рецептом</button>
+        </div>
+        <div class="feed-container" id="feedContainer"></div>
     </main>
 
-    <!-- МОДАЛЬНОЕ ОКНО -->
+    <!-- СЕКЦИЯ 2: ЧАТ И МЕССЕНДЖЕР -->
+    <main class="page-section" id="chatPage" style="display: none;">
+        <div class="chat-layout">
+            <aside class="chat-sidebar">
+                <input type="text" id="searchUser" placeholder="Найти кулинара по никнейму...">
+                <div class="users-list" id="usersList"></div>
+            </aside>
+            <section class="chat-window">
+                <div class="chat-header" id="chatHeader" style="display: none;">
+                    <span id="chatActiveUser">Собеседник</span>
+                </div>
+                <div class="chat-messages" id="chatMessages">
+                    <div class="chat-welcome">Выберите пользователя слева, чтобы начать общение.</div>
+                </div>
+                <div class="chat-input-area" id="chatInputArea" style="display: none;">
+                    <input type="text" id="chatMessageInput" placeholder="Напишите сообщение...">
+                    <button id="sendMsgBtn">Отправить</button>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- СЕКЦИЯ 3: ЛИЧНЫЙ ПРОФИЛЬ -->
+    <main class="page-section" id="profilePage" style="display: none;">
+        <div class="profile-card">
+            <div class="profile-avatar" id="userProfileAvatar">🍊</div>
+            <h2 id="userProfileName">Chef_Danya</h2>
+            <p class="profile-status">Ваши публикации:</p>
+        </div>
+        <div class="feed-container" id="myRecipesContainer"></div>
+    </main>
+
+    <!-- МОДАЛЬНОЕ ОКНО: ДОБАВЛЕНИЕ БЛЮДА -->
     <div class="modal-overlay" id="modalOverlay" style="display: none;">
         <div class="modal-box">
             <div class="modal-header">
-                <h3>Поделиться кулинарным шедевром</h3>
+                <h3>Новая публикация</h3>
                 <button class="close-btn" onclick="toggleModal(false)">✕</button>
             </div>
             <form id="recipeForm" enctype="multipart/form-data">
                 <input type="text" id="recipeTitle" placeholder="Название блюда" required>
                 <div class="file-upload-box">
-                    <label for="recipeFile">📁 Выберите фото блюда</label>
+                    <label for="recipeFile">📁 Выберите фото с компьютера</label>
                     <input type="file" id="recipeFile" accept="image/*" required>
                 </div>
-                <textarea id="recipeDesc" placeholder="Опишите процесс приготовления..." rows="4" required></textarea>
-                <button type="submit" class="submit-btn">Опубликовать в ленту</button>
+                <textarea id="recipeDesc" placeholder="Рецепт или описание..." rows="4" required></textarea>
+                <button type="submit" class="submit-btn">Опубликовать</button>
             </form>
         </div>
     </div>

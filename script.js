@@ -1,5 +1,5 @@
 // ВСТАВЬТЕ СЮДА ВАШУ ССЫЛКУ НА СЕРВЕР RENDER (БЕЗ КОСОЙ ЧЕРТЫ В КОНЦЕ):
-const SERVER_URL = 'https://onrender.com'; 
+const SERVER_URL = 'https://kulinaria3.onrender.com'; 
 
 let currentUser = null; 
 let activeScreen = 'feed'; 
